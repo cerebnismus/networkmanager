@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>NMM · Manage Nodes</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Network Management and Monitoring">
+  <meta name="author" content="oguzhan.ince@ogr.sakarya.edu.tr">
+  <!-- Favicon ICO -->
+  <link rel="icon"
+    href="https://d2aov160eccqlv.cloudfront.net/271739eb287c43adb004792095a0b2fc/images/7e26cb80ef4e68f870f1e40b5ef46584.ico">
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css"
+    integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+    integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <link href="https://getbootstrap.com/docs/5.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom styles for this template -->
+  <link href="https://getbootstrap.com/docs/5.1/examples/dashboard/dashboard.css" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#"><b> NMM ·</b> Network Management</a>
+    <input class="form-control form-control-dark w-100" type="text" placeholder="" aria-label="Search">
+    <ul class="navbar-nav px-3">
+      <li class="nav-item text-nowrap">
+        <a class="nav-link" href="/">Sign out</a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="container-fluid">
+    <div class="row">
+      <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+        <div class="sidebar-sticky">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="/dashboard">
+                <span data-feather="home"></span>
+                Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/nodes">
+                <span data-feather="file"></span>
+                Inventory <span class="sr-only">(current)</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/discovery">
+                <span data-feather="shopping-cart"></span>
+                Discovery
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <br> <!-- EMPTY LINE!  -->
+
+      <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-2 px-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+          <div class="btn-group mr-2">
+            <a class="btn btn-sm btn-outline-dark" href="/managenodes" role="button">Add Node</a>
+          </div>
+        </div>
+
+        <div class="jumbotron jumbotron-fluid">
+          <div class="container">
+            <div class="table-responsive">
+              <table class="table table-striped table-sm">
+                <thead>
+                  <tr>
+                    <th scope="col">Node ID</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">IP Addr</th>
+                    <th scope="col">Caption</th>
+                    <th scope="col">System Name</th>
+                    <th scope="col">Comm String</th>
+                    <th scope="col">Port</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">OID</th>
+                    <th scope="col">Created Date</th>
+                    <th scope="col">Last Poll</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <ul>
+                    <% for(let i=0; i < info.length; i++) { %>
+                      <% if(info[i].completed===true) { %>
+                        <% if(i % 2===0) { %>
+                          <tr>
+                            <td>
+                              <%= info[i]._id %>
+                            </td>
+                            <td>
+                              <%= info[i].status %>
+                            </td>
+                            <td>
+                              <%= info[i].ipaddress %>
+                            </td>
+                            <td>
+                              <%= info[i].nodename %>
+                            </td>
+                            <td>
+                              <%= info[i].sysname %>
+                            </td>
+                            <td>
+                              <%= info[i].community %>
+                            </td>
+                            <td>
+                              <%= info[i].port %>
+                            </td>
+                            <td>
+                              <%= info[i].vers %>
+                            </td>
+                            <td>
+                              <%= info[i].oid %>
+                            </td>
+                            <td>
+                              <%= info[i].created_date %>
+                            </td>
+                            <td>
+                              <%= info[i].last_poll_date %>
+                            </td>
+                          </tr>
+                          <% } else { %>
+                          <tr>
+                            <td>
+                              <%= info[i]._id %>
+                            </td>
+                            <td>
+                              <%= info[i].status %>
+                            </td>
+                            <td>
+                              <%= info[i].ipaddress %>
+                            </td>
+                            <td>
+                              <%= info[i].nodename %>
+                            </td>
+                            <td>
+                              <%= info[i].sysname %>
+                            </td>
+                            <td>
+                              <%= info[i].community %>
+                            </td>
+                            <td>
+                              <%= info[i].port %>
+                            </td>
+                            <td>
+                              <%= info[i].vers %>
+                            </td>
+                            <td>
+                              <%= info[i].oid %>
+                            </td>
+                            <td>
+                              <%= info[i].created_date %>
+                            </td>
+                            <td>
+                              <%= info[i].last_poll_date %>
+                            </td>
+                          </tr>
+                            <% } %>
+                              <% } else { %>
+                                <% if(i % 2===0) { %>
+                          <tr>
+                            <td>
+                              <%= info[i]._id %>
+                            </td>
+                            <td>
+                              <%= info[i].status %>
+                            </td>
+                            <td>
+                              <%= info[i].ipaddress %>
+                            </td>
+                            <td>
+                              <%= info[i].nodename %>
+                            </td>
+                            <td>
+                              <%= info[i].sysname %>
+                            </td>
+                            <td>
+                              <%= info[i].community %>
+                            </td>
+                            <td>
+                              <%= info[i].port %>
+                            </td>
+                            <td>
+                              <%= info[i].vers %>
+                            </td>
+                            <td>
+                              <%= info[i].oid %>
+                            </td>
+                            <td>
+                              <%= info[i].created_date %>
+                            </td>
+                            <td>
+                              <%= info[i].last_poll_date %>
+                            </td>
+                          </tr>
+                          <% } else { %>
+                          <tr>
+                            <td>
+                              <%= info[i]._id %>
+                            </td>
+                            <td>
+                              <%= info[i].status %>
+                            </td>
+                            <td>
+                              <%= info[i].ipaddress %>
+                            </td>
+                            <td>
+                              <%= info[i].nodename %>
+                            </td>
+                            <td>
+                              <%= info[i].sysname %>
+                            </td>
+                            <td>
+                              <%= info[i].community %>
+                            </td>
+                            <td>
+                              <%= info[i].port %>
+                            </td>
+                            <td>
+                              <%= info[i].vers %>
+                            </td>
+                            <td>
+                              <%= info[i].oid %>
+                            </td>
+                            <td>
+                              <%= info[i].created_date %>
+                            </td>
+                            <td>
+                              <%= info[i].last_poll_date %>
+                            </td>
+                          </tr>
+                          <% } %>
+                            <% } %>
+                              <% } %>
+                  </ul>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+      <!-- Bootstrap core JavaScript -->
+      <!-- Placed at the end of the document so the pages load faster -->
+      <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+      <script>window.jQuery || document.write('<script src="https://getbootstrap.com/docs/4.0/assets/js/vendor/jquery-slim.min.js"><\/script>')</script>
+      <script src="https://getbootstrap.com/docs/4.0/assets/js/vendor/popper.min.js"></script>
+      <script src="https://getbootstrap.com/docs/4.0/dist/js/bootstrap.min.js"></script>
+
+      <!-- Main Scripts -->
+      <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"
+        integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4"
+        crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"
+        integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13"
+        crossorigin="anonymous"></script>
+      <!-- Icons -->
+      <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+      <script>feather.replace()</script>
+
+      <script>
+        window.setInterval('refresh()', 30000);
+        // Call a function every 30000 milliseconds 
+        // (OR 30 seconds).
+
+        // Refresh or reload page.
+        function refresh() {
+          window.location.reload();
+        }
+      </script>
+
+</body>
+
+</html>
