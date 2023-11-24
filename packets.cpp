@@ -52,7 +52,7 @@ cksum(unsigned short *addr, int len)
     sum = (sum >> 16) + (sum & 0xffff);
     sum += (sum >> 16);
     answer = ~sum;
-    
+
     return (answer);
 }
 
@@ -194,7 +194,7 @@ packets::calculate_checksum(void *b, int len)
 {  
     unsigned short *buf = (unsigned short *)b;
     unsigned int sum = 0;
-    unsigned short result;
+    unsigned short result; // TODO can be define in one line
     for (sum = 0; len > 1; len -= 2) sum += *buf++;
     if (len == 1) sum += *(unsigned char *)buf;
     sum = (sum >> 16) + (sum & 0xFFFF);
@@ -242,8 +242,9 @@ packets::send_sock(const char *interface, const char *dest_ip)
     }
 
     // todo: add ethernet header
-    s_ehternet_header eth_hdr;
+    // s_ehternet_header eth_hdr;
 
+/*
     char packet[sizeof(s_ipv4_header) + sizeof(s_icmp_header)];
     memset(packet, 0, sizeof(packet));
 
@@ -260,6 +261,8 @@ packets::send_sock(const char *interface, const char *dest_ip)
     ip_hdr.dest_ip.s_addr = inet_addr(dest_ip);
     ip_hdr.checksum = calculate_checksum(&ip_hdr, sizeof(ip_hdr));
 
+*/
+
     s_icmp_header icmp_hdr;
     icmp_hdr.icmp_type = 8;
     icmp_hdr.icmp_code = 0;
@@ -272,12 +275,7 @@ packets::send_sock(const char *interface, const char *dest_ip)
     dest_addr.sin_family = PF_INET;
     inet_pton(PF_INET, dest_ip, &dest_addr.sin_addr);
 
-    // combine ip and icmp headers
-    memcpy(packet, &ip_hdr, sizeof(s_ipv4_header));
-    memcpy(packet + sizeof(s_ipv4_header), &icmp_hdr, sizeof(s_icmp_header));
-
-    // send packet
-    if (sendto(sockfd, packet, sizeof(packet), 0, 
+    if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
                (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
         perror("sendto: Could not send packet");
         exit(1);
@@ -286,16 +284,7 @@ packets::send_sock(const char *interface, const char *dest_ip)
         printf("\n --- packet sent to %s ---\n", dest_ip);
     }
 
-    /*if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
-               (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
-        perror("sendto: Could not send packet");
-        exit(1);
-    }
-    else {
-        printf("\n --- packet sent to %s ---\n", dest_ip);
-    }*/
 
-
-    // freeifaddrs(ifaddr);
+    freeifaddrs(ifaddr);
     close(sockfd);
 }
