@@ -1,5 +1,62 @@
 #include "packets.hpp"
 
+// dumps raw memory in hex byte and printable split format
+void 
+dump(const unsigned char *data_buffer, const unsigned int length)
+{
+    unsigned char byte;
+    unsigned int i, j;
+    for(i=0; i < length; i++) 
+    {
+        byte = data_buffer[i];
+        fprintf(stdout, "%02x ", data_buffer[i]);  // display byte in hex
+        if(((i%16)==15) || (i==length-1)) {
+            for(j=0; j < 15-(i%16); j++)
+                fprintf(stdout, "   ");
+            fprintf(stdout, "| ");
+            for(j=(i-(i%16)); j <= i; j++) {  // display printable bytes from line
+                byte = data_buffer[j];
+                if((byte > 31) && (byte < 127)) // outside printable char range
+                    fprintf(stdout, "%c", byte);
+                else
+                    fprintf(stdout, ".");
+            }
+            fprintf(stdout, "\n"); // end of the dump line (each line 16 bytes)
+        }
+    }
+}
+
+
+// NOT USING
+// generic checksum calculation algorithm
+unsigned short 
+cksum(unsigned short *addr, int len)
+{
+    int nleft = len;
+    int sum = 0;
+    unsigned short *w = addr;
+    unsigned short answer = 0;
+
+    while (nleft > 1)
+    {
+      sum += *w++;
+      nleft -= 2;
+    }
+
+    if (nleft == 1)
+    {
+      *(unsigned char *)(&answer) = *(unsigned char *)w;
+      sum += answer;
+    }
+
+    sum = (sum >> 16) + (sum & 0xffff);
+    sum += (sum >> 16);
+    answer = ~sum;
+    
+    return (answer);
+}
+
+
 
 void 
 printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_header& ipHeader, const s_icmp_header& icmpHeader) 
