@@ -126,12 +126,12 @@ char *packets::receive_bpf()
                 {  // Check if it's an ICMP packet
                     if (icmphdr->icmp_type == 8) 
                     {  // Check if it's an ICMP echo request
-                        std::cout << std::endl << " * Received ICMP echo request";
+                        std::cout << std::endl << " * receive_bpf: echo request";
                         printReceivedPackets(*ethhdr, *iphdr, *icmphdr);
                     }
                     if (icmphdr->icmp_type == 0) 
                     {  // Check if it's an ICMP echo reply
-                        std::cout << std::endl << "** Received ICMP echo reply";
+                        std::cout << std::endl << "** receive_bpf: echo reply";
                         printReceivedPackets(*ethhdr, *iphdr, *icmphdr);
                         delete[] this->bpfBuff;
                         close(this->sockFd);
