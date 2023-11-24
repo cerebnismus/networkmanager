@@ -198,8 +198,13 @@ void packets::send_sock(const char *dest_ip)
     // Send the packet
     if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
                (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) 
-    { perror("Could not send packet"); } 
-    else printf("\n --- packet sent to %s ---\n", dest_ip);
+    { 
+        perror("Could not send packet"); 
+    }
+    else 
+    {
+        printf("\n --- packet sent to %s ---\n", dest_ip);
+    }
 
     close(sockfd);
 }
