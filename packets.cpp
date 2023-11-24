@@ -56,26 +56,26 @@ packets::init_bpf(int bpfNumber, const char *interface)
 
     this->sockFd = open(buff.c_str(), O_RDWR);
     if (this->sockFd == -1) {
-        perror("Socket Create Error = ");
+        perror("open: Socket create error");
         exit(1);
     }
 
     strcpy(boundif.ifr_name, interface);
     if (ioctl(this->sockFd, BIOCSETIF, &boundif) == -1) {
-        perror("ioctl BIOCSETIF error = ");
+        perror("ioctl: BIOCSETIF error");
         close(this->sockFd);
         exit(1);
     }
 
     this->buffLen = 1;
     if (ioctl(this->sockFd, BIOCIMMEDIATE, &this->buffLen) == -1) {
-        perror("ioctl BIOCIMMADIATE error = ");
+        perror("ioctl: BIOCIMMADIATE error");
         close(this->sockFd);
         exit(1);
     }
 
     if (ioctl(this->sockFd, BIOCGBLEN, &this->buffLen)) {
-        perror("ioctl BIOCBLEN error = ");
+        perror("ioctl: BIOCBLEN error");
         close(this->sockFd);
         exit(1);
     }
@@ -152,13 +152,13 @@ packets::send_sock(const char *dest_ip)
 {
     int sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sockfd < 0) {
-        perror("Could not create socket");
+        perror("socket: Could not create socket");
         exit(1);
     }
 
     int option_value = 1; // Set SO_DEBUG option Enable debugging
     if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) {
-        perror("Could not set SO_DEBUG option");
+        perror("setsockopt: Could not set SO_DEBUG option");
         close(sockfd);
         exit(1);
     }
@@ -180,7 +180,7 @@ packets::send_sock(const char *dest_ip)
     // Send the packet
     if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
                (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
-        perror("Could not send packet");
+        perror("sendto: Could not send packet");
         exit(1);
     }
     else {
