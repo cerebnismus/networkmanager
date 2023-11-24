@@ -133,6 +133,9 @@ char *packets::receive_bpf()
                     {  // Check if it's an ICMP echo reply
                         std::cout << std::endl << "** Received ICMP echo reply";
                         printReceivedPackets(*ethhdr, *iphdr, *icmphdr);
+                        delete[] this->bpfBuff;
+                        close(this->sockFd);
+                        return (NULL);
                     }
                 }
                 ptr += BPF_WORDALIGN(bpfPacket->bh_hdrlen + bpfPacket->bh_caplen);
