@@ -9,17 +9,13 @@ printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_header& ip
     for (int i = 0; i < 6; ++i) 
     {
         std::cout << std::hex << static_cast<int>(ethHeader.dest_mac[i]) << std::dec;
-        if (i < 5) {
-            std::cout << ":";
-        }
+        if (i < 5) std::cout << ":";
     }
     std::cout << std::endl << "Source MAC: ";
     for (int i = 0; i < 6; ++i) 
     {
         std::cout << std::hex << static_cast<int>(ethHeader.source_mac[i]) << std::dec;
-        if (i < 5) {
-            std::cout << ":";
-        }
+        if (i < 5) std::cout << ":";
     }
     std::cout << std::endl << "Ethernet Type: 0x" << std::hex << ntohs(ethHeader.ether_type) << std::dec << std::endl;
 
@@ -54,42 +50,37 @@ packets::init_bpf(int bpfNumber, const char *interface)
 {
     std::string buff;
     struct ifreq boundif;
+
     buff = "/dev/bpf";
     buff += std::to_string(bpfNumber);
 
     this->sockFd = open(buff.c_str(), O_RDWR);
-    if (this->sockFd == -1)
-    {
+    if (this->sockFd == -1) {
         perror("Socket Create Error = ");
         exit(1);
     }
 
     strcpy(boundif.ifr_name, interface);
-
-    if (ioctl(this->sockFd, BIOCSETIF, &boundif) == -1)
-    {
+    if (ioctl(this->sockFd, BIOCSETIF, &boundif) == -1) {
         perror("ioctl BIOCSETIF error = ");
         close(this->sockFd);
-        exit(0);
+        exit(1);
     }
 
     this->buffLen = 1;
-    if (ioctl(this->sockFd, BIOCIMMEDIATE, &this->buffLen) == -1)
-    {
+    if (ioctl(this->sockFd, BIOCIMMEDIATE, &this->buffLen) == -1) {
         perror("ioctl BIOCIMMADIATE error = ");
         close(this->sockFd);
         exit(1);
     }
 
-    if (ioctl(this->sockFd, BIOCGBLEN, &this->buffLen))
-    {
+    if (ioctl(this->sockFd, BIOCGBLEN, &this->buffLen)) {
         perror("ioctl BIOCBLEN error = ");
         close(this->sockFd);
         exit(1);
     }
 
     this->bpfBuff = new struct bpf_hdr[this->buffLen];
-
     return (this->sockFd);
 }
 
@@ -162,14 +153,14 @@ packets::send_sock(const char *dest_ip)
     int sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sockfd < 0) {
         perror("Could not create socket");
-        return;
+        exit(1);
     }
 
     int option_value = 1; // Set SO_DEBUG option Enable debugging
     if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) {
         perror("Could not set SO_DEBUG option");
         close(sockfd);
-        return;
+        exit(1);
     }
 
     s_icmp_header icmp_hdr;
@@ -189,7 +180,8 @@ packets::send_sock(const char *dest_ip)
     // Send the packet
     if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
                (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
-        perror("Could not send packet"); 
+        perror("Could not send packet");
+        exit(1);
     }
     else {
         printf("\n --- packet sent to %s ---\n", dest_ip);
