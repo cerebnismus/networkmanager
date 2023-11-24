@@ -1,8 +1,34 @@
-#pragma once
+#ifndef PACKETS_HPP
+#define PACKETS_HPP
 
-#include <netinet/in.h>
-#include <net/bpf.h>
+// #pragma once  // it means only include once but,
+// it's not officially part of the C/C++ standarts.
+
+#include <netinet/in.h>  // Internet Protocol family
+#include <net/bpf.h>     // Berkeley Packet Filter
 #include <iostream>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <fcntl.h>
+#include <string>
+#include <sys/ioctl.h>
+#include <unistd.h>
+
+
+#ifdef __APPLE__
+
+#endif
+
+#ifdef __FreeBSD__
+
+#endif
+
+#ifdef __linux__
+
+#endif
+
+
 
 
 typedef struct s_icmp_header 
@@ -50,3 +76,5 @@ class packets
         unsigned short calculate_checksum(void *b, int len);
         char *receive_bpf();
 };
+
+#endif // PACKETS_HPP

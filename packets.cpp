@@ -1,15 +1,8 @@
 #include "packets.hpp"
 
-#include <net/if.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <fcntl.h>
-#include <string>
-#include <sys/ioctl.h>
-#include <unistd.h>
 
-
-void printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_header& ipHeader, const s_icmp_header& icmpHeader) 
+void 
+printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_header& ipHeader, const s_icmp_header& icmpHeader) 
 {
     std::cout << std::endl << "----------------------------------" << std::endl;
     std::cout << "Destination MAC: ";
@@ -53,11 +46,11 @@ void printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_heade
     std::cout << "ICMP Identifier: " << ntohs(icmpHeader.icmp_identifier) << std::endl;
     std::cout << "ICMP Sequence: " << ntohs(icmpHeader.icmp_sequence) << std::endl;
     std::cout << "----------------------------------" << std::endl;
-
 }
 
 
-int packets::init_bpf(int bpfNumber, const char *interface)
+int 
+packets::init_bpf(int bpfNumber, const char *interface)
 {
     std::string buff;
     struct ifreq boundif;
@@ -101,7 +94,8 @@ int packets::init_bpf(int bpfNumber, const char *interface)
 }
 
 
-char *packets::receive_bpf()
+char 
+*packets::receive_bpf()
 {
     int readBytes;
     char *ptr;
@@ -122,15 +116,17 @@ char *packets::receive_bpf()
                 ethhdr = (s_ehternet_header*)((char*) bpfPacket + bpfPacket->bh_hdrlen);
                 iphdr = (s_ipv4_header *)((char*) ethhdr + sizeof(s_ehternet_header));
                 icmphdr = (s_icmp_header *)((char*) iphdr + sizeof(s_ipv4_header));
+
+                // Check if it's an ICMP packet
                 if (iphdr->protocol == IPPROTO_ICMP) 
-                {  // Check if it's an ICMP packet
-                    if (icmphdr->icmp_type == 8) 
-                    {  // Check if it's an ICMP echo request
+                {
+                    // Check if it's an ICMP echo request
+                    if (icmphdr->icmp_type == 8) {
                         std::cout << std::endl << " * receive_bpf: echo request";
                         printReceivedPackets(*ethhdr, *iphdr, *icmphdr);
                     }
-                    if (icmphdr->icmp_type == 0) 
-                    {  // Check if it's an ICMP echo reply
+                    // Check if it's an ICMP echo reply
+                    if (icmphdr->icmp_type == 0) {
                         std::cout << std::endl << "** receive_bpf: echo reply";
                         printReceivedPackets(*ethhdr, *iphdr, *icmphdr);
                     }
@@ -145,15 +141,14 @@ char *packets::receive_bpf()
 }
 
 
-unsigned short packets::calculate_checksum(void *b, int len) 
+unsigned short 
+packets::calculate_checksum(void *b, int len) 
 {  
     unsigned short *buf = (unsigned short *)b;
     unsigned int sum = 0;
     unsigned short result;
-    for (sum = 0; len > 1; len -= 2)
-        sum += *buf++;
-    if (len == 1)
-        sum += *(unsigned char *)buf;
+    for (sum = 0; len > 1; len -= 2) sum += *buf++;
+    if (len == 1) sum += *(unsigned char *)buf;
     sum = (sum >> 16) + (sum & 0xFFFF);
     sum += (sum >> 16);
     result = ~sum;
@@ -161,18 +156,17 @@ unsigned short packets::calculate_checksum(void *b, int len)
 }
 
 
-void packets::send_sock(const char *dest_ip)
+void 
+packets::send_sock(const char *dest_ip)
 {
     int sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sockfd < 0) 
-    {
+    if (sockfd < 0) {
         perror("Could not create socket");
         return;
     }
 
     int option_value = 1; // Set SO_DEBUG option Enable debugging
-    if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) 
-    {
+    if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) {
         perror("Could not set SO_DEBUG option");
         close(sockfd);
         return;
@@ -194,12 +188,10 @@ void packets::send_sock(const char *dest_ip)
 
     // Send the packet
     if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
-               (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) 
-    { 
+               (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
         perror("Could not send packet"); 
     }
-    else 
-    {
+    else {
         printf("\n --- packet sent to %s ---\n", dest_ip);
     }
 

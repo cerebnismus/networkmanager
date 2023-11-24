@@ -3,7 +3,7 @@
 #### usage
 ```bash
 sudo g++ *.cpp -I.
-sudo ./a.out
+sudo ./a.out <destinationIP>
 ```
 
 #### todo
