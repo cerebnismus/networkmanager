@@ -9,19 +9,20 @@
 #include <unistd.h>
 
 
-void printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_header& ipHeader) 
+void printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_header& ipHeader, const s_icmp_header& icmpHeader) 
 {
-    // print ethernet header
-    std::cout << std::endl << "Destination MAC: ";
-    for (int i = 0; i < 6; ++i) {
+    std::cout << std::endl << "----------------------------------" << std::endl;
+    std::cout << "Destination MAC: ";
+    for (int i = 0; i < 6; ++i) 
+    {
         std::cout << std::hex << static_cast<int>(ethHeader.dest_mac[i]) << std::dec;
         if (i < 5) {
             std::cout << ":";
         }
     }
-
     std::cout << std::endl << "Source MAC: ";
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 6; ++i) 
+    {
         std::cout << std::hex << static_cast<int>(ethHeader.source_mac[i]) << std::dec;
         if (i < 5) {
             std::cout << ":";
@@ -29,13 +30,12 @@ void printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_heade
     }
     std::cout << std::endl << "Ethernet Type: 0x" << std::hex << ntohs(ethHeader.ether_type) << std::dec << std::endl;
 
-    // print ip header
     char source_ip_str[INET_ADDRSTRLEN];
     char dest_ip_str[INET_ADDRSTRLEN];
 
     inet_ntop(AF_INET, &(ipHeader.source_ip), source_ip_str, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ipHeader.dest_ip), dest_ip_str, INET_ADDRSTRLEN);
-
+    std::cout << "----------------------------------" << std::endl;
     std::cout << "Version & IHL: 0x" << std::hex << static_cast<int>(ipHeader.version_ihl) << std::dec << std::endl;
     std::cout << "Type of Service (TOS): 0x" << std::hex << static_cast<int>(ipHeader.tos) << std::dec << std::endl;
     std::cout << "Total Length: " << ntohs(ipHeader.total_length) << std::endl;
@@ -46,6 +46,14 @@ void printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_heade
     std::cout << "Checksum: 0x" << std::hex << ntohs(ipHeader.checksum) << std::dec << std::endl;
     std::cout << "Source IP: " << source_ip_str << std::endl;
     std::cout << "Destination IP: " << dest_ip_str << std::endl;
+    std::cout << "----------------------------------" << std::endl;
+    std::cout << "ICMP Type: " << static_cast<int>(icmpHeader.icmp_type) << std::endl;
+    std::cout << "ICMP Code: " << static_cast<int>(icmpHeader.icmp_code) << std::endl;
+    std::cout << "ICMP Checksum: 0x" << std::hex << ntohs(icmpHeader.icmp_checksum) << std::dec << std::endl;
+    std::cout << "ICMP Identifier: " << ntohs(icmpHeader.icmp_identifier) << std::endl;
+    std::cout << "ICMP Sequence: " << ntohs(icmpHeader.icmp_sequence) << std::endl;
+    std::cout << "----------------------------------" << std::endl;
+
 }
 
 
@@ -53,7 +61,6 @@ int packets::init_bpf(int bpfNumber, const char *interface)
 {
     std::string buff;
     struct ifreq boundif;
-
     buff = "/dev/bpf";
     buff += std::to_string(bpfNumber);
 
@@ -74,7 +81,6 @@ int packets::init_bpf(int bpfNumber, const char *interface)
     }
 
     this->buffLen = 1;
-    
     if (ioctl(this->sockFd, BIOCIMMEDIATE, &this->buffLen) == -1)
     {
         perror("ioctl BIOCIMMADIATE error = ");
@@ -101,6 +107,7 @@ char *packets::receive_bpf()
     char *ptr;
     s_ehternet_header *ethhdr;
     s_ipv4_header *iphdr;
+    s_icmp_header *icmphdr;
 
     while (1)
     {
@@ -114,8 +121,19 @@ char *packets::receive_bpf()
                 this->bpfPacket = reinterpret_cast<bpf_hdr *>(ptr);
                 ethhdr = (s_ehternet_header*)((char*) bpfPacket + bpfPacket->bh_hdrlen);
                 iphdr = (s_ipv4_header *)((char*) ethhdr + sizeof(s_ehternet_header));
-                if (iphdr->protocol == IPPROTO_ICMP) {  // Check if it's an ICMP packet
-                    printReceivedPackets(*ethhdr, *iphdr);
+                icmphdr = (s_icmp_header *)((char*) iphdr + sizeof(s_ipv4_header));
+                if (iphdr->protocol == IPPROTO_ICMP) 
+                {  // Check if it's an ICMP packet
+                    if (icmphdr->icmp_type == 8) 
+                    {  // Check if it's an ICMP echo request
+                        std::cout << std::endl << " * Received ICMP echo request";
+                        printReceivedPackets(*ethhdr, *iphdr, *icmphdr);
+                    }
+                    if (icmphdr->icmp_type == 0) 
+                    {  // Check if it's an ICMP echo reply
+                        std::cout << std::endl << "** Received ICMP echo reply";
+                        printReceivedPackets(*ethhdr, *iphdr, *icmphdr);
+                    }
                 }
                 ptr += BPF_WORDALIGN(bpfPacket->bh_hdrlen + bpfPacket->bh_caplen);
             }
@@ -132,7 +150,6 @@ unsigned short packets::calculate_checksum(void *b, int len)
     unsigned short *buf = (unsigned short *)b;
     unsigned int sum = 0;
     unsigned short result;
-
     for (sum = 0; len > 1; len -= 2)
         sum += *buf++;
     if (len == 1)
@@ -144,23 +161,18 @@ unsigned short packets::calculate_checksum(void *b, int len)
 }
 
 
-void packets::send_sock(const char *dest_ip) {
+void packets::send_sock(const char *dest_ip)
+{
     int sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sockfd < 0) {
+    if (sockfd < 0) 
+    {
         perror("Could not create socket");
         return;
     }
 
-    // Set SO_DEBUG option on the socket
-
-    /*
-        When enabled, SO_DEBUG allows the operating system 
-        to collect detailed information about the 
-        internal state of the socket.
-    */
-
-    int option_value = 1;  // Enable debugging
-    if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) {
+    int option_value = 1; // Set SO_DEBUG option Enable debugging
+    if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) 
+    {
         perror("Could not set SO_DEBUG option");
         close(sockfd);
         return;
@@ -168,8 +180,6 @@ void packets::send_sock(const char *dest_ip) {
 
     s_icmp_header icmp_hdr;
     struct sockaddr_in dest_addr;
-
-    // ICMP Header Craft
     icmp_hdr.icmp_type = 8;
     icmp_hdr.icmp_code = 0;
     icmp_hdr.icmp_identifier = getpid();
@@ -177,17 +187,16 @@ void packets::send_sock(const char *dest_ip) {
     icmp_hdr.icmp_checksum = 0;
     icmp_hdr.icmp_checksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
 
-    // Destination address
+    s_ipv4_header ip_hdr;
+
     dest_addr.sin_family = PF_INET;
     inet_pton(PF_INET, dest_ip, &dest_addr.sin_addr);
 
     // Send the packet
     if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
-               (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
-        perror("Could not send packet");
-    } else {
-        printf("ICMP packet sent to %s\n", dest_ip);
-    }
+               (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) 
+    { perror("Could not send packet"); } 
+    else printf("\n --- packet sent to %s ---\n", dest_ip);
 
     close(sockfd);
 }

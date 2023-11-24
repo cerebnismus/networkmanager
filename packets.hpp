@@ -27,7 +27,7 @@ typedef struct s_ipv4_header
     uint16_t checksum;
     in_addr source_ip;
     in_addr dest_ip;
-} s_ip_header;
+} s_ipv4_header;
 
 
 typedef struct s_ehternet_header
@@ -35,7 +35,6 @@ typedef struct s_ehternet_header
     uint8_t dest_mac[6];
     uint8_t source_mac[6];
     uint16_t ether_type;
-
 } s_ehternet_header;
 
 
