@@ -164,7 +164,7 @@ packets::send_sock(const char *interface, const char *dest_ip)
         exit(1);
     }
 
-    // get local ip address
+    // get local ie address
     struct ifaddrs *ifaddr, *ifa;
     char *ipAddr = nullptr;
 
@@ -184,32 +184,43 @@ packets::send_sock(const char *interface, const char *dest_ip)
         }
     }
 
+    // todo: add ethernet header
+    s_ehternet_header eth_hdr;
 
-    s_icmp_header icmp_hdr;
-    struct sockaddr_in dest_addr;
-    icmp_hdr.icmp_type = 8;
-    icmp_hdr.icmp_code = 0;
-    icmp_hdr.icmp_identifier = getpid();
-    icmp_hdr.icmp_sequence = 0;
-    icmp_hdr.icmp_checksum = 0;
-    icmp_hdr.icmp_checksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
+    char packet[sizeof(s_ipv4_header) + sizeof(s_icmp_header)];
+    memset(packet, 0, sizeof(packet));
 
     s_ipv4_header ip_hdr;
     ip_hdr.version_ihl = 0x45;
     ip_hdr.tos = 0;
-    ip_hdr.total_length = htons(sizeof(s_ipv4_header) + sizeof(s_icmp_header));
-    ip_hdr.id = htons(0);
-    ip_hdr.fragment_offset = htons(0);
+    ip_hdr.total_length = sizeof(s_ipv4_header) + sizeof(s_icmp_header);
+    ip_hdr.id = 0;
+    ip_hdr.fragment_offset = 0;
     ip_hdr.ttl = 64;
-    ip_hdr.protocol = IPPROTO_ICMP;
+    ip_hdr.protocol = IPPROTO_RAW;
     ip_hdr.checksum = 0;
     ip_hdr.source_ip.s_addr = inet_addr(ipAddr);
     ip_hdr.dest_ip.s_addr = inet_addr(dest_ip);
+    ip_hdr.checksum = calculate_checksum(&ip_hdr, sizeof(ip_hdr));
 
+    s_icmp_header icmp_hdr;
+    icmp_hdr.icmp_type = 8;
+    icmp_hdr.icmp_code = 0;
+    icmp_hdr.icmp_checksum = 0;
+    icmp_hdr.icmp_identifier = getpid();
+    icmp_hdr.icmp_sequence = 0;
+    icmp_hdr.icmp_checksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
+
+    struct sockaddr_in dest_addr;
     dest_addr.sin_family = PF_INET;
     inet_pton(PF_INET, dest_ip, &dest_addr.sin_addr);
 
-    if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
+    // combine ip and icmp headers
+    memcpy(packet, &ip_hdr, sizeof(s_ipv4_header));
+    memcpy(packet + sizeof(s_ipv4_header), &icmp_hdr, sizeof(s_icmp_header));
+
+    // send packet
+    if (sendto(sockfd, packet, sizeof(packet), 0, 
                (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
         perror("sendto: Could not send packet");
         exit(1);
@@ -218,9 +229,16 @@ packets::send_sock(const char *interface, const char *dest_ip)
         printf("\n --- packet sent to %s ---\n", dest_ip);
     }
 
+    /*if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
+               (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
+        perror("sendto: Could not send packet");
+        exit(1);
+    }
+    else {
+        printf("\n --- packet sent to %s ---\n", dest_ip);
+    }*/
 
 
-    freeifaddrs(ifaddr);
-
+    // freeifaddrs(ifaddr);
     close(sockfd);
 }
