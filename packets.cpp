@@ -59,7 +59,7 @@ cksum(unsigned short *addr, int len)
 
 
 void 
-printReceivedPackets(const s_ehternet_header& ethHeader, const s_ipv4_header& ipHeader, const s_icmp_header& icmpHeader) 
+printReceivedPackets(const s_ehternet_header& ethHeader, const ipv4_header_t& ipHeader, const icmp_header_t& icmpHeader) 
 {
     std::cout << std::endl << "----------------------------------" << std::endl;
     std::cout << "Destination MAC: ";
@@ -148,8 +148,8 @@ char
     int readBytes;
     char *ptr;
     s_ehternet_header *ethhdr;
-    s_ipv4_header *iphdr;
-    s_icmp_header *icmphdr;
+    ipv4_header_t *iphdr;
+    icmp_header_t *icmphdr;
 
     while (1)
     {
@@ -162,8 +162,8 @@ char
             {
                 this->bpfPacket = reinterpret_cast<bpf_hdr *>(ptr);
                 ethhdr = (s_ehternet_header*)((char*) bpfPacket + bpfPacket->bh_hdrlen);
-                iphdr = (s_ipv4_header *)((char*) ethhdr + sizeof(s_ehternet_header));
-                icmphdr = (s_icmp_header *)((char*) iphdr + sizeof(s_ipv4_header));
+                iphdr = (ipv4_header_t *)((char*) ethhdr + sizeof(s_ehternet_header));
+                icmphdr = (icmp_header_t *)((char*) iphdr + sizeof(ipv4_header_t));
 
                 // Check if it's an ICMP packet
                 if (iphdr->protocol == IPPROTO_ICMP) 
@@ -204,24 +204,11 @@ packets::calculate_checksum(void *b, int len)
 }
 
 
-
-void 
-packets::send_sock(const char *interface, const char *dest_ip)
+void
+packets::craft_ipv4_header(char *packet, const char *interface, const char *dest_ip, int ttl)
 {
-    int sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (sockfd < 0) {
-        perror("socket: Could not create socket");
-        exit(1);
-    }
 
-    int option_value = 1; // Set SO_DEBUG option Enable debugging
-    if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) {
-        perror("setsockopt: Could not set SO_DEBUG option");
-        close(sockfd);
-        exit(1);
-    }
-
-    // get local ie address
+    // get local ip address from given interface name
     struct ifaddrs *ifaddr, *ifa;
     char *ipAddr = nullptr;
 
@@ -241,17 +228,18 @@ packets::send_sock(const char *interface, const char *dest_ip)
         }
     }
 
-    // todo: add ethernet header
-    // s_ehternet_header eth_hdr;
 
-/*
-    char packet[sizeof(s_ipv4_header) + sizeof(s_icmp_header)];
+    // craft ipv4 header
+    ipv4_header_t *ip_hdr = (ipv4_header_t *)packet;
+
+
+    char packet[sizeof(ipv4_header_t) + sizeof(icmp_header_t)];
     memset(packet, 0, sizeof(packet));
 
-    s_ipv4_header ip_hdr;
+    ipv4_header_t ip_hdr;
     ip_hdr.version_ihl = 0x45;
     ip_hdr.tos = 0;
-    ip_hdr.total_length = sizeof(s_ipv4_header) + sizeof(s_icmp_header);
+    ip_hdr.total_length = sizeof(ipv4_header_t) + sizeof(icmp_header_t);
     ip_hdr.id = 0;
     ip_hdr.fragment_offset = 0;
     ip_hdr.ttl = 64;
@@ -261,9 +249,30 @@ packets::send_sock(const char *interface, const char *dest_ip)
     ip_hdr.dest_ip.s_addr = inet_addr(dest_ip);
     ip_hdr.checksum = calculate_checksum(&ip_hdr, sizeof(ip_hdr));
 
-*/
 
-    s_icmp_header icmp_hdr;
+}
+
+
+void 
+packets::send_sock(const char *interface, const char *dest_ip)
+{
+    int sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (sockfd < 0) {
+        perror("socket: Could not create socket");
+        exit(1);
+    }
+
+    int option_value = 1; // Set SO_DEBUG option Enable debugging
+    if (setsockopt(sockfd, SOL_SOCKET, SO_DEBUG, &option_value, sizeof(option_value)) < 0) {
+        perror("setsockopt: Could not set SO_DEBUG option");
+        close(sockfd);
+        exit(1);
+    }
+
+
+
+
+    icmp_header_t icmp_hdr;
     icmp_hdr.icmp_type = 8;
     icmp_hdr.icmp_code = 0;
     icmp_hdr.icmp_checksum = 0;
