@@ -16,8 +16,7 @@ void *receive_bpf_thread(void *arg)
     return NULL;
 }
 
-// take i as an arg
-int main(int argc, char **argv)
+int main() // multithread logic is false-positive implement
 {
     pthread_t receive_bpf_thread_id;
     pthread_t send_sock_thread_id;
@@ -26,11 +25,7 @@ int main(int argc, char **argv)
     pthread_create(&send_sock_thread_id, NULL, send_sock_thread, NULL);
 
     pthread_join(receive_bpf_thread_id, NULL);
-
-    for (int i = atoi(argv[1]); i < 10; i++)
-    {
-        pthread_join(send_sock_thread_id, NULL);
-    }
+    pthread_join(send_sock_thread_id, NULL);
 
     return 0;
 }
