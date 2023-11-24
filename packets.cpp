@@ -147,8 +147,9 @@ packets::calculate_checksum(void *b, int len)
 }
 
 
+
 void 
-packets::send_sock(const char *dest_ip)
+packets::send_sock(const char *interface, const char *dest_ip)
 {
     int sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sockfd < 0) {
@@ -163,6 +164,27 @@ packets::send_sock(const char *dest_ip)
         exit(1);
     }
 
+    // get local ip address
+    struct ifaddrs *ifaddr, *ifa;
+    char *ipAddr = nullptr;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+    }
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        int family = ifa->ifa_addr->sa_family;
+        if (family == AF_INET && strcmp(ifa->ifa_name, interface) == 0) {
+            ipAddr = new char[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, ipAddr, INET_ADDRSTRLEN);
+            break;
+        }
+    }
+
+
     s_icmp_header icmp_hdr;
     struct sockaddr_in dest_addr;
     icmp_hdr.icmp_type = 8;
@@ -173,11 +195,20 @@ packets::send_sock(const char *dest_ip)
     icmp_hdr.icmp_checksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
 
     s_ipv4_header ip_hdr;
+    ip_hdr.version_ihl = 0x45;
+    ip_hdr.tos = 0;
+    ip_hdr.total_length = htons(sizeof(s_ipv4_header) + sizeof(s_icmp_header));
+    ip_hdr.id = htons(0);
+    ip_hdr.fragment_offset = htons(0);
+    ip_hdr.ttl = 64;
+    ip_hdr.protocol = IPPROTO_ICMP;
+    ip_hdr.checksum = 0;
+    ip_hdr.source_ip.s_addr = inet_addr(ipAddr);
+    ip_hdr.dest_ip.s_addr = inet_addr(dest_ip);
 
     dest_addr.sin_family = PF_INET;
     inet_pton(PF_INET, dest_ip, &dest_addr.sin_addr);
 
-    // Send the packet
     if (sendto(sockfd, &icmp_hdr, sizeof(icmp_hdr), 0, 
                (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0) {
         perror("sendto: Could not send packet");
@@ -186,6 +217,10 @@ packets::send_sock(const char *dest_ip)
     else {
         printf("\n --- packet sent to %s ---\n", dest_ip);
     }
+
+
+
+    freeifaddrs(ifaddr);
 
     close(sockfd);
 }

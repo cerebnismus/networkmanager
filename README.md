@@ -2,8 +2,8 @@
 
 #### usage
 ```bash
-sudo g++ *.cpp -I.
-sudo ./a.out <destinationIP>
+sudo g++ -std=c++11 *.cpp -I.
+sudo ./a.out <interfaceName> <destinationIP>
 ```
 
 #### todo

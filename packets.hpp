@@ -14,6 +14,7 @@
 #include <string>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <ifaddrs.h>
 
 
 #ifdef __APPLE__
@@ -72,7 +73,7 @@ class packets
         struct bpf_hdr  *bpfBuff;
         struct bpf_hdr  *bpfPacket;
         int init_bpf(int bpfNumber, const char *interface);
-        void send_sock(const char *dest_ip);
+        void send_sock(const char *interface, const char *dest_ip);
         unsigned short calculate_checksum(void *b, int len);
         char *receive_bpf();
 };
