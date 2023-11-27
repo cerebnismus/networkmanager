@@ -59,19 +59,19 @@ cksum(unsigned short *addr, int len)
 
 
 void 
-printReceivedPackets(const s_ehternet_header& ethHeader, const ipv4_header_t& ipHeader, const icmp_header_t& icmpHeader) 
+printReceivedPackets(const ether_header_t& ethHeader, const ipv4_header_t& ipHeader, const icmp_header_t& icmpHeader) 
 {
     std::cout << std::endl << "----------------------------------" << std::endl;
     std::cout << "Destination MAC: ";
     for (int i = 0; i < 6; ++i) 
     {
-        std::cout << std::hex << static_cast<int>(ethHeader.dest_mac[i]) << std::dec;
+        std::cout << std::hex << static_cast<int>(ethHeader.ether_dhost[i]) << std::dec;
         if (i < 5) std::cout << ":";
     }
     std::cout << std::endl << "Source MAC: ";
     for (int i = 0; i < 6; ++i) 
     {
-        std::cout << std::hex << static_cast<int>(ethHeader.source_mac[i]) << std::dec;
+        std::cout << std::hex << static_cast<int>(ethHeader.ether_shost[i]) << std::dec;
         if (i < 5) std::cout << ":";
     }
     std::cout << std::endl << "Ethernet Type: 0x" << std::hex << ntohs(ethHeader.ether_type) << std::dec << std::endl;
@@ -79,25 +79,26 @@ printReceivedPackets(const s_ehternet_header& ethHeader, const ipv4_header_t& ip
     char source_ip_str[INET_ADDRSTRLEN];
     char dest_ip_str[INET_ADDRSTRLEN];
 
-    inet_ntop(AF_INET, &(ipHeader.source_ip), source_ip_str, INET_ADDRSTRLEN);
-    inet_ntop(AF_INET, &(ipHeader.dest_ip), dest_ip_str, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(ipHeader.ip_src), source_ip_str, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(ipHeader.ip_dst), dest_ip_str, INET_ADDRSTRLEN);
     std::cout << "----------------------------------" << std::endl;
-    std::cout << "Version & IHL: 0x" << std::hex << static_cast<int>(ipHeader.version_ihl) << std::dec << std::endl;
-    std::cout << "Type of Service (TOS): 0x" << std::hex << static_cast<int>(ipHeader.tos) << std::dec << std::endl;
-    std::cout << "Total Length: " << ntohs(ipHeader.total_length) << std::endl;
-    std::cout << "ID: " << ntohs(ipHeader.id) << std::endl;
-    std::cout << "Fragment Offset: " << ntohs(ipHeader.fragment_offset) << std::endl;
-    std::cout << "TTL: " << static_cast<int>(ipHeader.ttl) << std::endl;
-    std::cout << "Protocol: " << static_cast<int>(ipHeader.protocol) << std::endl;
-    std::cout << "Checksum: 0x" << std::hex << ntohs(ipHeader.checksum) << std::dec << std::endl;
+    std::cout << "Version: 0x" << std::hex << static_cast<int>(ipHeader.ip_v) << std::dec << std::endl;
+    std::cout << "Header Length: 0x" << std::hex << static_cast<int>(ipHeader.ip_hl) << std::dec << std::endl;
+    std::cout << "Type of Service (TOS): 0x" << std::hex << static_cast<int>(ipHeader.ip_tos) << std::dec << std::endl;
+    std::cout << "Total Length: " << ntohs(ipHeader.ip_len) << std::endl;
+    std::cout << "ID: " << ntohs(ipHeader.ip_id) << std::endl;
+    std::cout << "Fragment Offset: " << ntohs(ipHeader.ip_off) << std::endl;
+    std::cout << "TTL: " << static_cast<int>(ipHeader.ip_ttl) << std::endl;
+    std::cout << "Protocol: " << static_cast<int>(ipHeader.ip_p) << std::endl;
+    std::cout << "Checksum: 0x" << std::hex << ntohs(ipHeader.ip_sum) << std::dec << std::endl;
     std::cout << "Source IP: " << source_ip_str << std::endl;
     std::cout << "Destination IP: " << dest_ip_str << std::endl;
     std::cout << "----------------------------------" << std::endl;
     std::cout << "ICMP Type: " << static_cast<int>(icmpHeader.icmp_type) << std::endl;
     std::cout << "ICMP Code: " << static_cast<int>(icmpHeader.icmp_code) << std::endl;
-    std::cout << "ICMP Checksum: 0x" << std::hex << ntohs(icmpHeader.icmp_checksum) << std::dec << std::endl;
-    std::cout << "ICMP Identifier: " << ntohs(icmpHeader.icmp_identifier) << std::endl;
-    std::cout << "ICMP Sequence: " << ntohs(icmpHeader.icmp_sequence) << std::endl;
+    std::cout << "ICMP Checksum: 0x" << std::hex << ntohs(icmpHeader.icmp_cksum) << std::dec << std::endl;
+    std::cout << "ICMP Identifier: " << ntohs(icmpHeader.icmp_id) << std::endl;
+    std::cout << "ICMP Sequence: " << ntohs(icmpHeader.icmp_seq) << std::endl;
     std::cout << "----------------------------------" << std::endl;
 }
 
@@ -147,7 +148,7 @@ char
 {
     int readBytes;
     char *ptr;
-    s_ehternet_header *ethhdr;
+    ether_header_t *ethhdr;
     ipv4_header_t *iphdr;
     icmp_header_t *icmphdr;
 
@@ -161,12 +162,12 @@ char
             while (ptr < (reinterpret_cast<char *>(this->bpfBuff) + readBytes))
             {
                 this->bpfPacket = reinterpret_cast<bpf_hdr *>(ptr);
-                ethhdr = (s_ehternet_header*)((char*) bpfPacket + bpfPacket->bh_hdrlen);
-                iphdr = (ipv4_header_t *)((char*) ethhdr + sizeof(s_ehternet_header));
+                ethhdr = (ether_header_t*)((char*) bpfPacket + bpfPacket->bh_hdrlen);
+                iphdr = (ipv4_header_t *)((char*) ethhdr + sizeof(ether_header_t));
                 icmphdr = (icmp_header_t *)((char*) iphdr + sizeof(ipv4_header_t));
 
                 // Check if it's an ICMP packet
-                if (iphdr->protocol == IPPROTO_ICMP) 
+                if (iphdr->ip_p == IPPROTO_ICMP) 
                 {
                     // Check if it's an ICMP echo request
                     if (icmphdr->icmp_type == 8) {
@@ -228,28 +229,28 @@ packets::craft_ipv4_header(char *packet, const char *interface, const char *dest
         }
     }
 
-
     // craft ipv4 header
-    ipv4_header_t *ip_hdr = (ipv4_header_t *)packet;
+    // ipv4_header_t *ip_hdr = (ipv4_header_t *)packet;
 
-
-    char packet[sizeof(ipv4_header_t) + sizeof(icmp_header_t)];
-    memset(packet, 0, sizeof(packet));
+    // char packet[sizeof(ipv4_header_t) + sizeof(icmp_header_t)];
+    // memset(packet, 0, sizeof(packet));
 
     ipv4_header_t ip_hdr;
-    ip_hdr.version_ihl = 0x45;
-    ip_hdr.tos = 0;
-    ip_hdr.total_length = sizeof(ipv4_header_t) + sizeof(icmp_header_t);
-    ip_hdr.id = 0;
-    ip_hdr.fragment_offset = 0;
-    ip_hdr.ttl = 64;
-    ip_hdr.protocol = IPPROTO_RAW;
-    ip_hdr.checksum = 0;
-    ip_hdr.source_ip.s_addr = inet_addr(ipAddr);
-    ip_hdr.dest_ip.s_addr = inet_addr(dest_ip);
-    ip_hdr.checksum = calculate_checksum(&ip_hdr, sizeof(ip_hdr));
+    ip_hdr.ip_hl = 5;
+    ip_hdr.ip_v = 4;
+    ip_hdr.ip_tos = 0;
+    ip_hdr.ip_len = sizeof(ipv4_header_t) + sizeof(icmp_header_t);
+    ip_hdr.ip_id = 0;
+    ip_hdr.ip_off = 0;
+    ip_hdr.ip_ttl = ttl;
+    ip_hdr.ip_p = IPPROTO_RAW;
+    ip_hdr.ip_sum = 0;
+    ip_hdr.ip_src.s_addr = inet_addr(ipAddr);
+    ip_hdr.ip_dst.s_addr = inet_addr(dest_ip);
+    ip_hdr.ip_sum = calculate_checksum(&ip_hdr, sizeof(ip_hdr));
 
-
+    // !!!!! TODO CRAFT PACKET !!!!!!!!!!
+    freeifaddrs(ifaddr);
 }
 
 
@@ -269,16 +270,13 @@ packets::send_sock(const char *interface, const char *dest_ip)
         exit(1);
     }
 
-
-
-
     icmp_header_t icmp_hdr;
     icmp_hdr.icmp_type = 8;
     icmp_hdr.icmp_code = 0;
-    icmp_hdr.icmp_checksum = 0;
-    icmp_hdr.icmp_identifier = getpid();
-    icmp_hdr.icmp_sequence = 0;
-    icmp_hdr.icmp_checksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
+    icmp_hdr.icmp_cksum = 0;
+    icmp_hdr.icmp_id = getpid();
+    icmp_hdr.icmp_seq = 0;
+    icmp_hdr.icmp_cksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
 
     struct sockaddr_in dest_addr;
     dest_addr.sin_family = PF_INET;
@@ -293,7 +291,5 @@ packets::send_sock(const char *interface, const char *dest_ip)
         printf("\n --- packet sent to %s ---\n", dest_ip);
     }
 
-
-    freeifaddrs(ifaddr);
     close(sockfd);
 }
