@@ -516,15 +516,15 @@ void    icmp_input __P((struct mbuf *, int));
 class packets
 {
     public:
-        int sockFd;
-        int buffLen;
-        struct bpf_hdr  *bpfBuff;
-        struct bpf_hdr  *bpfPacket;
-        int init_bpf(int bpfNumber, const char *interface);
-        void send_sock(const char *interface, const char *dest_ip);
-        void craft_ipv4_header(char *packet, const char *interface, const char *dest_ip, int ttl);
+        int bpf_sock_fd, craft_sock_fd, buffLen;
+        struct bpf_hdr  *bpf_buff, *bpf_packet;
+        int bpf_init(int bpfNumber, const char *interface);
+        char *bpf_read();
+        void bpf_print(const ether_header_t& ethHeader, const ipv4_header_t& ipHeader, const icmp_header_t& icmpHeader);
+        // todo & refactoring up to here
+        void craft_socket(const char *interface, const char *dest_ip);
+        void craft_packet(char *packet, const char *interface, const char *dest_ip, int ttl);
         unsigned short calculate_checksum(void *b, int len);
-        char *receive_bpf();
 };
 
 // #endif // PACKETS_HPP

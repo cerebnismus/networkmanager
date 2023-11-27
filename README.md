@@ -7,6 +7,8 @@ sudo ./a.out <interfaceName> <destinationIP>
 ```
 
 #### todo
+- [ ] 'this' pointer for class methods
+- [ ] void to int for return values
 - [ ] fix multithread logic
 - [ ] add a cross-plat makefile
 - [ ] epoll for linux ?

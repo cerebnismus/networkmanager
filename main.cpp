@@ -17,10 +17,10 @@ ThreadArgs {
 };
 
 void 
-*send_sock_thread(void *arg) {
+*craft_socket_thread(void *arg) {
     ThreadArgs *args = (ThreadArgs *)arg;
     packets net_socket;
-    net_socket.send_sock(args->interface_arg, args->dest_ip_arg);
+    net_socket.craft_socket(args->interface_arg, args->dest_ip_arg);
     delete args; // Don't forget to free the allocated memory
     return (NULL);
 }
@@ -44,7 +44,7 @@ main(int argc, char *argv[])
     pthread_create(&receive_bpf_thread_id, NULL, receive_bpf_thread, argv[1]);
 
     ThreadArgs *args = new ThreadArgs{argv[1], argv[2]};
-    pthread_create(&send_sock_thread_id, NULL, send_sock_thread, args);
+    pthread_create(&send_sock_thread_id, NULL, craft_socket_thread, args);
 
     pthread_join(receive_bpf_thread_id, NULL);
     pthread_join(send_sock_thread_id, NULL);
