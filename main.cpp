@@ -1,7 +1,6 @@
 #include "packets.hpp"
 #include <pthread.h> /* multi thread */
 
-
 void 
 *receive_bpf_thread(void *ifname_arg)
 {
@@ -10,7 +9,6 @@ void
     net_socket.receive_bpf();
     return NULL;
 }
-
 
 struct 
 ThreadArgs {
@@ -26,6 +24,7 @@ void
     delete args; // Don't forget to free the allocated memory
     return (NULL);
 }
+
 
 int 
 main(int argc, char *argv[])
