@@ -512,6 +512,7 @@ void    icmp_input __P((struct mbuf *, int));
 /*  * ----------------
     * PACKETS CLASS
     * ---------------- */
+#define BPF_BUFFER_SIZE 4096
 class packets
 {
     public:

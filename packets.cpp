@@ -1,5 +1,6 @@
 #include "packets.hpp"
 
+
 // dumps raw memory in hex byte and printable split format
 void 
 dump(const unsigned char *data_buffer, const unsigned int length)
@@ -107,37 +108,50 @@ int
 packets::init_bpf(int bpfNumber, const char *interface)
 {
     std::string buff;
-    struct ifreq boundif;
+    struct ifreq ifr;
 
     buff = "/dev/bpf";
     buff += std::to_string(bpfNumber);
 
+    // Open the BPF device
     this->sockFd = open(buff.c_str(), O_RDWR);
-    if (this->sockFd == -1) {
-        perror("open: Socket create error");
+    if (this->sockFd < 0) {
+        perror("open: error opening the BPF device");
         exit(1);
     }
 
-    strcpy(boundif.ifr_name, interface);
-    if (ioctl(this->sockFd, BIOCSETIF, &boundif) == -1) {
-        perror("ioctl: BIOCSETIF error");
-        close(this->sockFd);
-        exit(1);
+    // biocsetif: set the interface to use for sniffing
+    strncpy(ifr.ifr_name, interface, sizeof(ifr.ifr_name));
+    if (ioctl(this->sockFd, BIOCSETIF, &ifr) < 0) {
+        perror("Error setting interface");
+        return 1;
     }
 
-    this->buffLen = 1;
-    if (ioctl(this->sockFd, BIOCIMMEDIATE, &this->buffLen) == -1) {
+    this->buffLen = 1; // biocpromisc: set the if to promiscuous mode
+    if (ioctl(this->sockFd, BIOCPROMISC, &this->buffLen) < 0) {
+        perror("Error enabling promiscuous mode");
+        return 1;
+    }
+
+    // bioimmediate: read packets as soon as they arrive
+    if (ioctl(this->sockFd, BIOCIMMEDIATE, &this->buffLen) < 0) {
         perror("ioctl: BIOCIMMADIATE error");
         close(this->sockFd);
         exit(1);
     }
 
+    // biocgblen: get the buffer length
     if (ioctl(this->sockFd, BIOCGBLEN, &this->buffLen)) {
         perror("ioctl: BIOCBLEN error");
         close(this->sockFd);
         exit(1);
     }
 
+    // todo BIOCSBLEN, BIOCSHDRCMPLT, BIOCSSEESENT, BIOCSRTIMEOUT, 
+    // todo BIOCGRTIMEOUT, BIOCGSTATS, BIOCGHDRCMPLT, BIOCGSEESENT, 
+    // todo BIOCIMMEDIATE, research about these flags
+
+    // Allocate the buffer to hold packets
     this->bpfBuff = new struct bpf_hdr[this->buffLen];
     return (this->sockFd);
 }
