@@ -149,7 +149,6 @@ packets::craft_packet(const char *interface, const char *dest_ip, int ttl)
     icmp_hdr.icmp_cksum = calculate_checksum(&icmp_hdr, sizeof(icmp_hdr));
     memcpy(crafted_packet + sizeof(ipv4_header_t), &icmp_hdr, sizeof(icmp_header_t));
 
-
     struct sockaddr_in dest_addr;
     dest_addr.sin_family = PF_INET;
     inet_pton(PF_INET, dest_ip, &dest_addr.sin_addr);

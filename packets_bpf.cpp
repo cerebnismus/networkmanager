@@ -42,6 +42,9 @@ packets::bpf_print(const ether_header_t& ethHeader, const ipv4_header_t& ipHeade
     std::cout << "ICMP Checksum: 0x" << std::hex << ntohs(icmpHeader.icmp_cksum) << std::dec << std::endl;
     std::cout << "ICMP Identifier: " << ntohs(icmpHeader.icmp_id) << std::endl;
     std::cout << "ICMP Sequence: " << ntohs(icmpHeader.icmp_seq) << std::endl;
+    time_t timestamp = ntohl(*(uint32_t *)icmpHeader.icmp_data);
+    std::cout << "ICMP Timestamp: " << ctime(&timestamp);
+    std::cout << "ICMP Data: " << icmpHeader.icmp_data + 8 << std::endl;
     std::cout << "----------------------------------" << std::endl;
 }
 

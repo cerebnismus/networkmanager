@@ -7,15 +7,18 @@ sudo ./a.out <interfaceName> <destinationIP>
 ```
 
 #### todo
-- [x] loop for select bpf device
+- [ ] #define IPOPT_TS  68    /* timestamp */
+- [ ] #define IPOPT_RR  7     /* record packet route */
+- [ ] checksum validation
+- [ ] add cross-plat makefile
+- [x] add multithread logic [main.cpp]
+- [ ] void to int for return values
+- [x] loop for select bpf device [packets_bpf.cpp]
+- [x] add timestamp for each packet [packets.cpp]
+- [x] print timestamp for each packet [packets_bpf.cpp]
 - [ ] pragma features in C/C++ ?
 - [ ] 'this' pointer for class methods
-- [ ] void to int for return values
-- [ ] fix multithread logic
-- [ ] add a cross-plat makefile
-- [ ] epoll for linux ?
-- [ ] #define IPOPT_RR  7     /* record packet route */
-- [ ] #define IPOPT_TS  68    /* timestamp */
+
 - [ ] multicore support
 ```C++
     // Set CPU affinity for this thread
