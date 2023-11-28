@@ -1,12 +1,23 @@
 #include "packets.hpp"
-#include <pthread.h> /* multi thread */
+#include <pthread.h>
+
+void
+sigint_handler(int signal) 
+{
+        printf(" - SIGINT signal received.\n");
+
+        packets packets;
+        // Close the socket if its opened
+        if (packets.bpf_sock_fd > 0) close(packets.bpf_sock_fd);
+        if (packets.craft_sock_fd > 0) close(packets.craft_sock_fd);
+}
 
 void 
 *receive_bpf_thread(void *ifname_arg)
 {
-    packets net_socket;
-    net_socket.init_bpf(2, (const char *)ifname_arg);    // bpf device and ifname
-    net_socket.receive_bpf();
+    packets packets_bpf;
+    packets_bpf.bpf_init((const char *)ifname_arg);    // ifname
+    packets_bpf.bpf_read();
     return NULL;
 }
 
@@ -19,9 +30,9 @@ ThreadArgs {
 void 
 *craft_socket_thread(void *arg) {
     ThreadArgs *args = (ThreadArgs *)arg;
-    packets net_socket;
-    net_socket.craft_socket(args->interface_arg, args->dest_ip_arg);
-    delete args; // Don't forget to free the allocated memory
+    packets packets_bpf;
+    packets_bpf.craft_socket(args->interface_arg, args->dest_ip_arg);
+    delete args; // free the allocated memory
     return (NULL);
 }
 
@@ -48,6 +59,8 @@ main(int argc, char *argv[])
 
     pthread_join(receive_bpf_thread_id, NULL);
     pthread_join(send_sock_thread_id, NULL);
+
+    signal(SIGINT, sigint_handler);
 
     exit(0);
 }

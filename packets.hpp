@@ -3,16 +3,14 @@
 
 // #pragma once  // it means only include once but,
 // it's not officially part of the C/C++ standarts.
-// TODO: what are pragma features in C/C++ ?
-
-#include <ifaddrs.h>        /* getifaddrs from ifname */
-// #include <netinet/in.h>
-// #include <netinet/ip.h>
-#include <net/if.h>
-#include <net/bpf.h>        /* Berkeley Packet Filter */
-#include <arpa/inet.h>
 
 #include <sys/types.h>      /* XXX temporary hack to get u_ types */
+#include <ifaddrs.h>        /* getifaddrs from ifname */
+#include <net/bpf.h>        /* Berkeley Packet Filter */
+#include <chrono>           /* icmp-data-timestamp */
+
+#include <net/if.h>
+#include <arpa/inet.h>
 
 #include <unistd.h>
 #include <iostream>
@@ -126,10 +124,10 @@ struct ether_addr *ether_aton(const char *);
     * ------------ */
 #define IPVERSION               4
 
+#define IPPROTO_IP              0               /* dummy for IP */
 #define IPPROTO_ICMP            1               /* control message protocol */
 #define IPPROTO_TCP             6               /* tcp */
 #define IPPROTO_UDP             17              /* user datagram protocol */
-// #define IPPROTO_IPIP         4               /* IPIP tunnels (older KA9Q tunnels use 94) */
 #define IPPROTO_IPV4            4               /* IPv4 encapsulation */
 #define IPPROTO_IPV6            41              /* IPv6-in-IPv4 tunnelling */
 #define IPPROTO_ROUTING         43              /* IPv6 routing header */
@@ -513,17 +511,18 @@ void    icmp_input __P((struct mbuf *, int));
     * PACKETS CLASS
     * ---------------- */
 #define BPF_BUFFER_SIZE 4096
+#define MAX_PACKET_LEN 65535
 class packets
 {
     public:
-        int bpf_sock_fd, craft_sock_fd, buffLen;
-        struct bpf_hdr  *bpf_buff, *bpf_packet;
-        int bpf_init(int bpfNumber, const char *interface);
+        int bpf_sock_fd, craft_sock_fd, bpf_buff_len;
+        struct bpf_hdr *bpf_buff, *bpf_packet;
+        int bpf_init(const char *interface);
         char *bpf_read();
         void bpf_print(const ether_header_t& ethHeader, const ipv4_header_t& ipHeader, const icmp_header_t& icmpHeader);
         // todo & refactoring up to here
         void craft_socket(const char *interface, const char *dest_ip);
-        void craft_packet(char *packet, const char *interface, const char *dest_ip, int ttl);
+        void craft_packet(const char *interface, const char *dest_ip, int ttl);
         unsigned short calculate_checksum(void *b, int len);
 };
 

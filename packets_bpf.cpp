@@ -46,46 +46,48 @@ packets::bpf_print(const ether_header_t& ethHeader, const ipv4_header_t& ipHeade
 }
 
 
-int 
-packets::bpf_init(int bpfNumber, const char *interface)
+int
+packets::bpf_init(const char *interface)
 {
     std::string buff;
     struct ifreq ifr;
 
-    buff = "/dev/bpf";
-    buff += std::to_string(bpfNumber);
-
-    // Open the BPF device
-    this->bpf_sock_fd = open(buff.c_str(), O_RDWR);
-    if (this->bpf_sock_fd < 0) {
-        perror("open: error opening the BPF device");
-        exit(1);
+    // Select BPF device for bound to the socket
+    for(int i=0; i<256; i++)
+    {
+        buff = "/dev/bpf";
+        buff += std::to_string(i);
+        bpf_sock_fd = open(buff.c_str(), O_RDWR);
+        if (bpf_sock_fd != -1) {
+            std::cout << " - BPF device found: " << buff << std::endl;
+            break;
+        }
     }
 
-    // biocsetif: set the interface to use for sniffing
+    // biocsetif: set the interface to bound to the socket
     strncpy(ifr.ifr_name, interface, sizeof(ifr.ifr_name));
-    if (ioctl(this->bpf_sock_fd, BIOCSETIF, &ifr) < 0) {
+    if (ioctl(bpf_sock_fd, BIOCSETIF, &ifr) < 0) {
         perror("Error setting interface");
         return 1;
     }
 
-    this->buffLen = 1; // biocpromisc: set the if to promiscuous mode
-    if (ioctl(this->bpf_sock_fd, BIOCPROMISC, &this->buffLen) < 0) {
+    bpf_buff_len = 1; // biocpromisc: set the if to promiscuous mode
+    if (ioctl(bpf_sock_fd, BIOCPROMISC, &bpf_buff_len) < 0) {
         perror("Error enabling promiscuous mode");
         return 1;
     }
 
     // bioimmediate: read packets as soon as they arrive
-    if (ioctl(this->bpf_sock_fd, BIOCIMMEDIATE, &this->buffLen) < 0) {
+    if (ioctl(bpf_sock_fd, BIOCIMMEDIATE, &bpf_buff_len) < 0) {
         perror("ioctl: BIOCIMMADIATE error");
-        close(this->bpf_sock_fd);
+        close(bpf_sock_fd);
         exit(1);
     }
 
     // biocgblen: get the buffer length
-    if (ioctl(this->bpf_sock_fd, BIOCGBLEN, &this->buffLen)) {
+    if (ioctl(bpf_sock_fd, BIOCGBLEN, &bpf_buff_len)) {
         perror("ioctl: BIOCBLEN error");
-        close(this->bpf_sock_fd);
+        close(bpf_sock_fd);
         exit(1);
     }
 
@@ -94,8 +96,8 @@ packets::bpf_init(int bpfNumber, const char *interface)
     // todo BIOCIMMEDIATE, research about these flags
 
     // Allocate the buffer to hold packets
-    this->bpf_buff = new struct bpf_hdr[this->buffLen];
-    return (this->bpf_sock_fd);
+    bpf_buff = new struct bpf_hdr[bpf_buff_len];
+    return (bpf_sock_fd);
 }
 
 
@@ -111,14 +113,14 @@ char
 
     while (1)
     {
-        memset(this->bpf_buff, 0, this->buffLen);
-        readBytes = read(this->bpf_sock_fd, bpf_buff, this->buffLen);
+        memset(bpf_buff, 0, bpf_buff_len);
+        readBytes = read(bpf_sock_fd, bpf_buff, bpf_buff_len);
         if (readBytes > 0)
         {
-            ptr = reinterpret_cast<char *>(this->bpf_buff);
-            while (ptr < (reinterpret_cast<char *>(this->bpf_buff) + readBytes))
+            ptr = reinterpret_cast<char *>(bpf_buff);
+            while (ptr < (reinterpret_cast<char *>(bpf_buff) + readBytes))
             {
-                this->bpf_packet = reinterpret_cast<bpf_hdr *>(ptr);
+                bpf_packet = reinterpret_cast<bpf_hdr *>(ptr);
                 eth_hdr = (ether_header_t*)((char*) bpf_packet + bpf_packet->bh_hdrlen);
                 ip_hdr = (ipv4_header_t *)((char*) eth_hdr + sizeof(ether_header_t));
                 icmp_hdr = (icmp_header_t *)((char*) ip_hdr + sizeof(ipv4_header_t));
@@ -140,7 +142,7 @@ char
             }
         }
     }
-    delete[] this->bpf_buff;
-    close(this->bpf_sock_fd);
+    delete[] bpf_buff;
+    close(bpf_sock_fd);
     return (NULL);
 }

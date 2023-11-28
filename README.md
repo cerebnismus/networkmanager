@@ -7,6 +7,8 @@ sudo ./a.out <interfaceName> <destinationIP>
 ```
 
 #### todo
+- [x] loop for select bpf device
+- [ ] pragma features in C/C++ ?
 - [ ] 'this' pointer for class methods
 - [ ] void to int for return values
 - [ ] fix multithread logic
