@@ -1,69 +1,5 @@
 #include "packets.hpp"
 
-// todo constructor and destructor for packets class
-// todo research and implement the following functions
-
-/*
-packets::packets() 
-{
-    bpf_sock_fd = -1;
-    craft_sock_fd = -1;
-}
-
-
-packets::~packets() 
-{
-    if (bpf_sock_fd > 0) close(bpf_sock_fd);
-    if (craft_sock_fd > 0) close(craft_sock_fd);
-    freeifaddrs(ifaddr);    // Free the allocated memory
-    delete[] ipAddr;        // Free the allocated memory
-}
-
-*/
-
-
-#if BYTE_ORDER == LITTLE_ENDIAN
-# define ODDBYTE(v)	(v)
-#elif BYTE_ORDER == BIG_ENDIAN
-# define ODDBYTE(v)	((unsigned short)(v) << 8)
-#else
-# define ODDBYTE(v)	htons((unsigned short)(v) << 8)
-#endif
-
-static unsigned short
-in_cksum(const unsigned short *addr, int len, unsigned short csum)
-{
-	int nleft = len;
-	const unsigned short *w = addr;
-	unsigned short answer;
-	int sum = csum;
-
-	/*
-	 *  Our algorithm is simple, using a 32 bit accumulator (sum),
-	 *  we add sequential 16 bit words to it, and at the end, fold
-	 *  back all the carry bits from the top 16 bits into the lower
-	 *  16 bits.
-	 */
-	while (nleft > 1) {
-		sum += *w++;
-		nleft -= 2;
-	}
-
-	/* mop up an odd byte, if necessary */
-	if (nleft == 1)
-		sum += ODDBYTE(*(unsigned char *)w); /* le16toh() may be unavailable on old systems */
-
-	/*
-	 * add back carry outs from top 16 bits to low 16 bits
-	 */
-	sum = (sum >> 16) + (sum & 0xffff);	/* add hi 16 to low 16 */
-	sum += (sum >> 16);			/* add carry */
-	answer = ~sum;				/* truncate to 16 bits */
-	return (answer);
-}
-
-
-
 unsigned short 
 packets::calculate_checksum(void *b, int len) 
 {  
@@ -101,16 +37,14 @@ packets::craft_packet(const char *interface, const char *dest_ip, int ttl)
         }
     }
 
-    // Craft the packet
     char crafted_packet[sizeof(ipv4_header_t) + sizeof(icmp_header_t)];
     memset(crafted_packet, 0, sizeof(ipv4_header_t) + sizeof(icmp_header_t));
 
     ipv4_header_t ip_hdr;
-    ip_hdr.ip_hl = 5;  // Header length
-    ip_hdr.ip_v = 4;   // IPv4
-    ip_hdr.ip_tos = 0; // Type of Service
+    ip_hdr.ip_hl = 5;
+    ip_hdr.ip_v = 4;
+    ip_hdr.ip_tos = 0; // todo Type of Service to Diffentiate the service
     ip_hdr.ip_len = sizeof(ipv4_header_t) + sizeof(icmp_header_t);
-    // ip_hdr.ip_len = htons(sizeof(ipv4_header_t) + sizeof(icmp_header_t)); // Total length
     ip_hdr.ip_id = htons(54321); // Identification
     ip_hdr.ip_off = 0; // Fragment offset
     ip_hdr.ip_ttl = ttl; // Time to live
@@ -129,11 +63,9 @@ packets::craft_packet(const char *interface, const char *dest_ip, int ttl)
     icmp_hdr.icmp_id = getpid();
     icmp_hdr.icmp_seq = 0; /* don't ++ here, it can be a macro */
 
-    // get uint32_t timestamp
-    uint32_t timestamp = htonl(time(NULL));
+    uint32_t timestamp = htonl(time(NULL)); // get uint32_t timestamp
     memcpy(icmp_hdr.icmp_data, &timestamp, sizeof(timestamp));
 
-    // cerebnismus //
     icmp_hdr.icmp_data[9] = 'c';
     icmp_hdr.icmp_data[10] = 'e';
     icmp_hdr.icmp_data[11] = 'r';
@@ -163,8 +95,8 @@ packets::craft_packet(const char *interface, const char *dest_ip, int ttl)
         printf("\n --- packet sent to %s ---\n", dest_ip);
     }
 
-    freeifaddrs(ifaddr);    // Free the allocated memory
-    delete[] ipAddr;        // Free the allocated memory
+    freeifaddrs(ifaddr);
+    delete[] ipAddr;
     close(craft_sock_fd);
 }
 
@@ -185,6 +117,7 @@ packets::craft_socket(const char *interface, const char *dest_ip)
         exit(1);
     }
 
+    // with the help of yigit, we think its not necessary to set.
     int sodebug_option_value = 1; // Set SO_DEBUG option Enable debugging
     if (setsockopt(craft_sock_fd, SOL_SOCKET, SO_DEBUG, &sodebug_option_value, sizeof(sodebug_option_value)) < 0) {
         perror("setsockopt: Could not set SO_DEBUG option");
